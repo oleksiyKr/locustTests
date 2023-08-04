@@ -1,5 +1,5 @@
+# Install locust library
 pip install locust
 
-for runnning
-
+# For runnning test / server
 locust -f createTeeup.py
