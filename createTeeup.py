@@ -1,16 +1,38 @@
-from locust import HttpUser, TaskSet, task, between
+import datetime
 
-from jso import jsonBody, headers
+from locust import HttpUser, TaskSet, between, task
+
+from user_data import headers, jsonBody
+
+USER_CREDENTIALS = [
+    ("coowetest999+locust@gmail.com", "Pa$$w0rd!"),
+]
+
+start_time = datetime.datetime.now() + datetime.timedelta(minutes=10)
+ended_time = start_time + datetime.timedelta(hours=1)
 
 
 class UserBehaviour(TaskSet):
+    resp = {}
+
+    def on_start(self):
+        if len(USER_CREDENTIALS) > 0:
+            user, password = USER_CREDENTIALS.pop()
+            with self.client.post("/users/login", {"email": user, "password": password,
+                                                   "type": "email"}) as request:
+                global resp
+                resp = request.json()
+
     @task
     def create_tee_up_task(self):
-        self.client.post("/teeups", headers=headers, json=jsonBody)
+        token = resp['accessToken']
+        id = resp['id']
+        headers['authorization'] = f'Bearer {token}'
+        jsonBody['ownerId'] = id
+        jsonBody["gameplanOptions"][0]["suggestions"][0]["endDate"] = ended_time.isoformat()
+        jsonBody["gameplanOptions"][0]["suggestions"][0]["startDate"] = start_time.isoformat()
 
-    # @task
-    # def login_task(self):
-    #     self.client.post("/users/login", {"email": "zapar777alex@gmail.com", "password": "Pa$$w0rd!"})
+        self.client.post("/teeups", headers=headers, json=jsonBody)
 
 
 class User(HttpUser):
@@ -36,6 +58,3 @@ class User(HttpUser):
 #                 return tick_data
 #
 #         return None
-
-
-# zapar777alex@gmail.com
